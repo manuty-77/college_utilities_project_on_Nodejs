@@ -1,0 +1,34 @@
+{
+  "name": "djattendance",
+  "repository": "https://github.com/attendanceproject/djattendance",
+  "success_url": "/",
+  "scripts": {
+    "postdeploy": "npm run build; psql -c 'create extension hstore;' $DATABASE_URL | sed 's%/[^/]*$%/%' | awk '{print $1\"template1\"}'; python ap/makeallmigrations.py && python ap/manage.py migrate --noinput && python ap/manage.py collectstatic --noinput && python ap/manage.py populate && echo \"from accounts.models import User; User.objects.filter(email='$ADMIN_EMAIL').delete(); User.objects.create_superuser('$ADMIN_EMAIL', '$ADMIN_PASSWORD')\" | python ap/manage.py shell"
+  },
+  "stack": "heroku-16",
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    },
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "DJANGO_SECRET_KEY": {
+      "description": "A randomly generated secret to secure your Django installation",
+      "generator": "secret"
+    },
+    "DJANGO_SETTINGS_MODULE": "ap.settings.staging",
+    "ADMIN_EMAIL": "admin@example.com",
+    "ADMIN_PASSWORD": "admin"
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql",
+      "options": {
+        "version": "9.5"
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+#maps{
+	height:500px;
+	width:100%;
+	margin-bottom: 20px;
+}
+#search_box{
+	margin-top: 10px;
+	width:50%;
+	height:31px;
+}
+#my_location{
+	margin-top:10px;
+	margin-left: 5px;
+}
+#icon{
+	color:red;
+}

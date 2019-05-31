@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Nearby Places- ask-NSITians</title>
+	<link rel="icon" href="images/icon.jpg">
+	<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+	<style type="text/css">
+		#maps{height:500px;
+			width:100%;
+			margin-bottom: 20px;
+		}#search_box{
+			margin-top: 10px;
+			width:50%;
+			height:31px;
+		}#my_location{
+			margin-top:10px;
+			margin-left: 5px;
+		}#icon{
+			color:red;
+		}
+
+	</style>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script defer src="https://use.fontawesome.com/releases/v5.0.8/js/all.js"></script>
+</head>
+<body>
+	<nav class="navbar navbar-default">
+	<div class="container">
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-navbar-collapse" aria-expanded="false">
+				        <span class="sr-only">Toggle navigation</span>
+				        <span class="icon-bar"></span>
+				        <span class="icon-bar"></span>
+				        <span class="icon-bar"></span>
+	      	</button>
+	      	<a href="http://nsit.ac.in/" class="navbar-brand" id="brand">NSIT College</a>
+	</div>
+	<div class="collapse navbar-collapse" id="bs-navbar-collapse">
+		<ul class="nav navbar-nav">
+			<li><a href="/">Home</a></li>
+			<% if(login!=0) { %>
+			<li><a href="savedata">Store Data</a></li>
+			<% } %>
+			<li class="active"><a href="preview">Preview</a></li>
+		</ul>
+		<ul class="nav navbar-nav navbar-right">
+			<% if(login ==0){ %>
+			<li><a href="#">Signup <i class="fa fa-user-plus"></i></a></li>
+			<li><a href="#">Login <i class="fa fa-user"></i></a></li>
+			<% } else{ %>
+			<li><a href="">Welome <%=username%></a> </li>
+			<li><a href="/Logout">Logout <i class="fa fa-user"></i></a></li>
+			<% } %>
+
+		</ul>
+	</div>
+</nav>
+
+	<div class="container">
+		<input type="hidden" id="arr" value="<%=me%>">
+		<h1>What are you looking for? <i class="fas fa-search"></i></h1>
+		<input type="text" name="enter_location" placeholder="Enter location" id="search_box">	
+		<button class="btn btn-primary" id="my_location"><i class="fas fa-location-arrow"></i>	</button>
+	
+	
+	<div id="activity-selector">
+				<form action="http://localhost:3000/selection"  method="post">
+					<label for="activity"><h4>Select The Amenity you are looking for:</h4></label>
+					<select name="activity" id="options" class="activity">
+						<option name="option0" value="--select--" selected disabled >--select--</option>
+						<option name="option1" value="1"><a id="first" href="http://localhost:3000">Book Stores</a></option>
+						<option name="option2" value="2"><a href="/page2">Hospitals and chemist shops</a></option>
+						<option name="option3" value="3"><a href="/page3">Shopping Mall</a></option>
+						<option name="option4" value="4"><a href="/page4">Food and cafeteria</a></option>
+						<option name="option5" value="5"><a href="/page5">Renting Places</a></option>
+						<option name="option6" value="6"><a href="/page6">Laundry</a></option>	
+						<option name="option7" value="7"><a href="/page7">Grocery</a></option>
+						<option name="option8" value="8"><a href="/page8">Medical Stores</a></option>
+						<option name="option9" value="9"><a href="/page9">Petrol Pump</a></option>
+					</select>
+					<input type="submit" name="answer">
+				</form>
+			</div>
+	</div>
+	<div id="maps"></div>
+	
+	<div class="container">
+		<span id="home"><span id="result"></span></span>
+	</div>	
+
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<!-- <script async defer
+	src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDt21F169mapKnlCQcjAjVWWHxK6SKZjpU&callback=activateSearch">
+	</script> -->
+	<script type="text/javascript" src='<%=process.env.API_KEY%>'></script>
+	<script type="text/javascript">
+		console.log("connected");
+		
+var map,marker1,circle;
+var flag=0;
+var input;
+var marker_red="images/marker_red.png";
+var marker_black="images/marker_black.png";
+var marker_user="images/marker_user.png";
+var prev_infoWindow=false;
+var directionsService;
+var directionDisplay;
+// var arr=[{"lat":17.423799765024,"lng":78.454352221819,"label":"Mukesh medicals Punjagutta, Hyderabad","priority":1,"distance":0},{"lat":17.395375905513,"lng":78.437582134952,"label":"Ayodya Nagar, Mehdipatnam,Hyderabad","priority":1,"distance":0},{"lat":25.599507005244,"lng":85.157630317051,"label":"Kankarbagh\r\n","priority":1,"distance":0},{"lat":25.61691,"lng":85.1106163,"label":"Jawhna Apartment\r\n","priority":1,"distance":0},{"lat":28.595744852393,"lng":77.042018637929,"label":"Dwarka\r\n","priority":1,"distance":0},{"lat":28.643140711227,"lng":77.297184891515,"label":"Preet Vihar","priority":1,"distance":0},{"lat":28.5454365,"lng":77.1468748,"label":"Jasola","priority":1,"distance":0},{"lat":28.630258267433,"lng":77.071540637253,"label":"Peeragarhi\r\n","priority":1,"distance":0},{"lat":28.534766431522,"lng":77.260365486145,"label":"Kalkaji\r\n","priority":1,"distance":0},{"lat":28.53045973339,"lng":77.256574243701,"label":"Pitampura\r\n","priority":1,"distance":0},{"lat":28.669396964808,"lng":77.14617122059,"label":"Punjabi Bagh","priority":1,"distance":0},{"lat":28.43279621787,"lng":77.30102444871,"label":"Sec-17\r\n","priority":1,"distance":0},{"lat":28.43496474246,"lng":77.058687017202,"label":"Sec-46\r\n","priority":1,"distance":0}];
+var arr=JSON.parse($('#arr').val());
+	if(arr.length<=0){
+		alert("No data found. Go and store your center locations first");
+	}
+
+for(var i=0;i<arr.length;i++){
+	arr[i].distance=0;
+}
+google.maps.event.addDomListener(window,'load',initMap);
+
+//Create Map
+function initMap(){
+	console.log("init map called");
+	var loc={lat: 28.61093188555962, lng:77.03638662148501};
+	 map=new google.maps.Map(document.getElementById("maps"),{
+		zoom:14,
+		center: loc,
+		scaleControl:true,
+		styles:[{featureType:"poi",
+				elementType:"labels",
+				stylers:[{visibility:"off"}]}]
+	});
+	 directionsService=new google.maps.DirectionsService();
+	 directionDisplay= new google.maps.DirectionsRenderer({map:map, suppressMarkers:true});
+
+	 map.controls[google.maps.ControlPosition.TOP_LEFT].push(document.querySelector("#search_box"));
+	 map.controls[google.maps.ControlPosition.TOP_LEFT].push(document.querySelector("#my_location"));
+
+
+	 //Markers for all labs
+	 for(var i=0;i<arr.length;i++){
+	 	var la=arr[i].lat;
+	 	var ln=arr[i].lng
+	 	var loc={lat:la,lng:ln};
+	 	addMainMarker(loc,i); 
+	 }
+	 function addMainMarker(loc,i){
+	 	var marker= new google.maps.Marker({
+	 		position:loc,
+	 		map:map,
+	 		title:arr[i].label
+
+	 	});
+	 	var infoWindow= new google.maps.InfoWindow({
+	 		content: arr[i].label
+	 	});
+	 	marker.addListener('click', function() {
+            if( prev_infoWindow ) {
+                prev_infoWindow.close();
+            }
+
+            prev_infoWindow = infoWindow;
+            infoWindow.open(map, marker);
+
+        });
+
+	 	arr[i].map=marker;	 	  
+	 }
+	 
+	 
+// //Geocoding
+// var geocoder =new google.maps.Geocoder();
+// var address="ATM";
+// geocoder.geocode( { 'address': address}, function(results, status) {
+// 	console.log(results);
+// 	console.log(status);
+//   if (status == 'OK') {
+
+//     var latitude = results[0].geometry.location.lat();
+//    // latitude=Math.round(latitude *10000000)/10000000;
+//     var longitude = results[0].geometry.location.lng();
+//     //longitude=Math.round(longitude*10000000)/10000000;
+//  	console.log(latitude+" "+longitude);
+//  	var loc={lat:latitude,lng:longitude};
+//  	addMarker(loc);
+//   } 
+//   else
+//   {
+//   	console.log(status);
+//   }
+// });
+// var loc={lat: 28.61290, lng:77.03566};
+// addMarker(loc);
+// function addMarker(coords)
+// {	
+// 	var marker=new google.maps.Marker({
+// 		position:coords,
+// 		map: map
+// 	});	
+// 	console.log("marker added");
+// }
+}
+
+
+
+
+//AutoComplete search Box
+var defaultBounds = new google.maps.LatLngBounds(
+  new google.maps.LatLng(8.493053536721622, 68.93992172085473),
+  new google.maps.LatLng(36.52644088806312, 96.01023422085473));
+var options = {
+  bounds: defaultBounds,
+  componentRestrictions: {country: 'IN'}
+};
+ input=document.querySelector("#search_box"); 
+var autocomplete = new google.maps.places.Autocomplete(input, options);
+autocomplete.addListener('place_changed', searchedAddress);
+function searchedAddress(){
+	 if( prev_infoWindow ) {
+                        prev_infoWindow.close();
+                    }
+	 var place=autocomplete.getPlace();
+	addMarker1(place.geometry.location);
+	var org=new google.maps.LatLng(place.geometry.location.lat(),place.geometry.location.lng());
+	console.log(org);
+	AllFunctions(org);
+}
+
+
+// Code for centering map to user location
+	document.querySelector("#my_location").addEventListener("click",geolocate);
+	function geolocate(){
+		var geolocation;
+		if( prev_infoWindow ) {
+                        prev_infoWindow.close();
+                    }
+			  if (navigator.geolocation) {
+				    navigator.geolocation.getCurrentPosition(function(position) {
+				       geolocation = {
+				        lat: position.coords.latitude,
+				        lng: position.coords.longitude
+				      };
+			      console.log(geolocation);
+			      addMarker1(geolocation);
+
+			      var org=new google.maps.LatLng(geolocation.lat,geolocation.lng);
+			    // var metres=156543.03392 * Math.cos(org.lat() * Math.PI / 180) / Math.pow(2, 11.78);
+			     
+			      AllFunctions(org);     
+			    });
+			  }
+		}
+
+
+// Add Marker for User position
+function addMarker1(coords)
+{	
+	if(flag===1)
+		{
+			marker1.setMap(null);
+			//circle.setMap(null);
+		}
+	 marker1=new google.maps.Marker({
+		position:coords,
+		map: map,
+		icon:marker_user
+	});	
+	 var infoWindow= new google.maps.InfoWindow({
+	 		content: "My Location"
+	 	});
+	 	marker1.addListener('click', function() {
+            if( prev_infoWindow ) {
+                prev_infoWindow.close();
+            }
+
+            prev_infoWindow = infoWindow;
+            infoWindow.open(map, marker1);
+
+        });
+      //HighLight 10kms around the user location
+      //  circle = new google.maps.Circle({
+      // 	strokeColor: '#d9534f',
+      //       strokeOpacity: 0.35,
+      //       strokeWeight: 2,
+      //       fillColor: '#d9534f',
+      //       fillOpacity: 0.35,
+      //       map: map,
+      //   center: coords,
+      //   radius: 3000
+      // });
+        flag=1;
+	  map.setCenter(coords);
+      map.setZoom(11.78);
+}
+
+// Distance matrix and calculation
+function AllFunctions(origin){
+	
+	// var dest=[];
+	// for(var i=0;i<arr.length;i++){
+	// 	dest[i]=new google.maps.LatLng(arr[i].lat,arr[i].lng);
+	// }
+	// var service = new google.maps.DistanceMatrixService();
+	// service.getDistanceMatrix(
+	// {
+	// 	origins:[origin],
+	// 	destinations:dest,
+	// 	travelMode:'DRIVING'
+	// },callback);
+	// function callback(response, status){
+	// 		console.log(status);
+	// 		if(status=='OK')
+	// 		{
+	// 			for(var i=0;i<arr.length;i++){
+	// 				console.log(response.rows[0].elements[i].distance.value);
+	// 			}
+	// 		}
+	// 		else{
+	// 			console.log("couldn't find distance due to status: "+status);
+	// 		}
+	// }
+
+	for(var i=0;i<arr.length;i++)
+	{
+		arr[i].distance= getDistance(arr[i].lat,arr[i].lng,origin.lat(),origin.lng());
+	}
+	
+	arr.sort((a,b) => parseFloat(a.distance)-parseFloat(b.distance));
+		
+		for(var i=0;i<arr.length;i++)
+		{
+			arr[i].map.setMap(map);
+			arr[i].map.setIcon();
+		}
+		if( prev_infoWindow ) {
+                prev_infoWindow.close();
+            }
+		$("#result").remove();
+	var l1=0,l2=0;
+	for(var i=0;i<arr.length;i++)
+	{
+		if(arr[i].distance<=500)
+			{l1++;l2++;}
+		if(arr[i].distance>500 && arr[i].distance<=15000)
+			{l2++;break;}
+	}	
+	var pos=0;
+	if(l1==0 && l2==0)
+	{
+		var infoWindow= new google.maps.InfoWindow({
+	 		content: "Couldn't find nearby labs due to some technical fault, contact or chat with us to know the nearest lab"
+	 	});
+	 	if( prev_infoWindow ){
+                prev_infoWindow.close();
+            
+
+            prev_infoWindow = infoWindow;
+            infoWindow.open(map, marker1);
+        };
+	}
+	if(l1>0)
+	{
+		 pos=0,max=0;
+		for(var i=0;i<l1;i++)
+		{
+			if(arr[i].priority>max)
+				pos=i;
+		}
+
+		var dest= new google.maps.LatLng(arr[pos].lat,arr[pos].lng);
+		arr[pos].map.setMap(map);
+		showRoute(origin,dest);
+	}
+	if(l1==0 && l2>0)
+	{
+		pos=l2-1;
+		var dest= new google.maps.LatLng(arr[pos].lat,arr[pos].lng);
+		showRoute(origin,dest);
+	}
+	arr[pos].map.setIcon(marker_red);
+	console.log("nearest location is "+ arr[pos].label);
+}
+
+function getDistance(lat1,lon1,lat2,lon2) {
+  var R = 6371000; 					// Radius of the earth in metres
+  var dLat = deg2rad(lat2-lat1);  	// deg2rad below
+  var dLon = deg2rad(lon2-lon1); 
+  var a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2)
+    ; 
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  var d = R * c; 					// Distance in km
+  return d;
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI/180);
+}
+
+	//Function for diatance matrix
+	function showRoute(start,end){
+		findRoute(directionsService,directionDisplay,start,end);
+	}
+	function findRoute(directionsService,directionDisplay,start,end)
+		{
+		console.log("inside findRoute");
+		console.log(start.lat()+" "+start.lng());
+		console.log(end.lat()+" "+end.lng());
+		directionsService.route({
+			origin:start,
+			destination:end,
+			travelMode:google.maps.TravelMode.WALKING},
+			function(response,status){
+				if(status==google.maps.DirectionsStatus.OK){
+					directionDisplay.setDirections(response);
+				}
+				else{
+					alert("Directions request failed due to "+status);
+				}
+		});
+	}
+
+
+	</script>
+	
+</body>
+</html>
